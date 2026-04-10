@@ -5,22 +5,22 @@ import (
 	"fmt"
 )
 
-// Opcodes
+// FLUX ISA Opcodes
 const (
-	MOVI = iota
-	IADD
-	ISUB
-	IMUL
-	IDIV
-	INC
-	DEC
-	CMP
-	JZ
-	JNZ
-	JMP
-	PUSH
-	POP
-	HALT
+	NOP  = 0x00
+	MOV  = 0x01
+	IADD = 0x08
+	ISUB = 0x09
+	IMUL = 0x0A
+	IDIV = 0x0B
+	JNZ  = 0x06
+	JZ   = 0x2E
+	JMP  = 0x13
+	MOVI = 0x2B
+	CMP  = 0x2D
+	INC  = 0x0E
+	DEC  = 0x0F
+	HALT = 0x80
 )
 
 // FluxVM represents the FLUX virtual machine
@@ -52,6 +52,16 @@ func (vm *FluxVM) ExecuteStep() error {
 	vm.PC++
 
 	switch opcode {
+	case MOV:
+		if vm.PC+2 > len(vm.Bytecode) {
+			return errors.New("insufficient bytes for MOV")
+		}
+		rd := int(vm.Bytecode[vm.PC])
+		vm.PC++
+		rs := int(vm.Bytecode[vm.PC])
+		vm.PC++
+		vm.Registers[rd] = vm.Registers[rs]
+
 	case MOVI:
 		if vm.PC+2 > len(vm.Bytecode) {
 			return errors.New("insufficient bytes for MOVI")
@@ -164,26 +174,6 @@ func (vm *FluxVM) ExecuteStep() error {
 		}
 		target := int(vm.Bytecode[vm.PC])
 		vm.PC = target
-
-	case PUSH:
-		if vm.PC >= len(vm.Bytecode) {
-			return errors.New("insufficient bytes for PUSH")
-		}
-		rs := int(vm.Bytecode[vm.PC])
-		vm.PC++
-		vm.Stack = append(vm.Stack, vm.Registers[rs])
-
-	case POP:
-		if vm.PC >= len(vm.Bytecode) {
-			return errors.New("insufficient bytes for POP")
-		}
-		rd := int(vm.Bytecode[vm.PC])
-		vm.PC++
-		if len(vm.Stack) == 0 {
-			return errors.New("stack underflow")
-		}
-		vm.Registers[rd] = vm.Stack[len(vm.Stack)-1]
-		vm.Stack = vm.Stack[:len(vm.Stack)-1]
 
 	case HALT:
 		vm.Running = false
